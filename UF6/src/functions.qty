@@ -1,0 +1,202 @@
+-- Helper functions to generate a model hamiltonian, as well as storing data
+-- Created on 01.08.2023 
+
+function writedata(filename,data)
+    --writing 2d arrays into ASCI files
+    file = io.open("data/"..filename..".dat","w+")
+    for i = 1, #data do
+        str =""
+        for j = 1, #data[i] do
+            str = str .. tostring(data[i][j]) .. "  "
+        end
+        file:write(str .. "\n")
+    end
+    io.close(file)
+end
+
+function create_split_ligand_hamiltonian(hamiltonian_dft,impurity_size,fermi_energy,n_occupied_ligands,n_unoccupied_ligands)
+    --Creating a split ligand model from the input operator hamiltonian_dft, whereby the impurity is in the beginning and of size impurity_size.
+    --fermi_energy marks the energy up until which the bath is assumed to be occupied and 
+    --n_occupied_ligands,n_unoccupied_ligands are the respective numbers of ligands to be generated.
+    h_dft_mat = Chop(OperatorToMatrix(hamiltonian_dft),10^-7)
+    writedata("h_dft",h_dft_mat)
+    
+    bath = Matrix.Sub(h_dft_mat, impurity_size+1, #h_dft_mat-impurity_size, impurity_size+1, #h_dft_mat-impurity_size)
+
+    e_bath, diagonal_bath_basis = Eigensystem(bath)
+    e_bath = Chop(e_bath,10^-10)    
+    writedata("eigen_bath",{e_bath})
+    
+    fermi_edge=get_fermi_edge(e_bath,fermi_energy)
+    
+    writedata("rot_mat_before",diagonal_bath_basis)
+
+    print("","Rotating to diagonal bath")
+    diagonal_bath_basis = Matrix.Flatten({{Matrix.Identity(impurity_size),0},{0,diagonal_bath_basis}})
+    --diagonal_bath_basis = Orthonormalize(diagonal_bath_basis,{{"Method","GramSchmidt"},{"ReduceDimension",false}})
+    writedata("rot_mat",diagonal_bath_basis)
+    h_dft_diagonal_bath = Chop(Rotate(h_dft_mat,diagonal_bath_basis),10^-7)
+    writedata("h_dft_diagonal_bath",h_dft_diagonal_bath)
+
+    
+    print("","Generating Unoccupied sub-hamiltonian")
+    h_dft_unoccupied     = Matrix.Sub(h_dft_diagonal_bath,impurity_size+fermi_edge)
+    unoccupied_blocks, t = BlockBandDiagonalize(h_dft_unoccupied,impurity_size,{{"Ntri",n_occupied_ligands+1}})
+    writedata("h_dft_unoccupied",h_dft_unoccupied)
+    
+    print("","Generating Occupied sub-hamiltonian")
+    h_dft_occupied     = get_occupied_hamiltonian(h_dft_diagonal_bath,impurity_size,fermi_edge)
+    occupied_blocks, t = BlockBandDiagonalize(h_dft_occupied,impurity_size,{{"Ntri",n_unoccupied_ligands+1}})
+    writedata("h_dft_occupied",h_dft_occupied)
+    
+    hamiltonian = get_split_ligand_hamiltonian(unoccupied_blocks,occupied_blocks)
+    print("","Without Spin:",#hamiltonian)
+    hamiltonian = Matrix.AddSpin(hamiltonian) --Strangely, this doesn't change the matrix
+    hamiltonian = (hamiltonian + ConjugateTranspose(hamiltonian))/2
+    print("","With Spin:",#hamiltonian)
+    hamiltonian = Matrix.ToOperator(hamiltonian)
+    
+    return hamiltonian
+end
+
+function get_fermi_edge(bath, fermi_energy)
+    --Getting the index position where the orbitals become unoccupied according to the fermi_energy
+    fermi_edge=0
+    for j = 1,#bath do
+        if bath[j]> fermi_energy then
+            fermi_edge=j-1
+            break
+        end
+    end
+    print("","Number of occupied bath states:"..tostring(fermi_edge))
+    print("","Number of unoccupied bath states:"..tostring(#bath-fermi_edge))
+    return fermi_edge
+end
+
+function get_occupied_hamiltonian(hamiltonian_full,impurity_size,fermi_edge)
+    --Getting all blocks of the occupied sub hamiltonian which is equivalent to 
+    -- impurity, 0, hopping
+    -- 0       , 0, 0
+    -- hopping , 0, ligands
+    impurity = Matrix.Sub(hamiltonian_full,impurity_size)
+    hopping  = Matrix.Sub(hamiltonian_full,1,impurity_size,impurity_size+fermi_edge,#hamiltonian_full-impurity_size-fermi_edge)
+    ligands = Matrix.Sub(hamiltonian_full, impurity_size+fermi_edge,#hamiltonian_full-impurity_size-fermi_edge, impurity_size+fermi_edge,#hamiltonian_full-impurity_size-fermi_edge)
+    return Matrix.Flatten({{impurity,hopping},{ConjugateTranspose(hopping),ligands}})
+end
+
+function get_split_ligand_hamiltonian(unoccupied,occupied)  
+    --This function takes the occupied and unoccupied blocks from BlockbandDiagonalize and orders them into a full model hamiltonian
+    
+    impurity=unoccupied[1][2]
+    
+    ligands_unoccupied=ligands_from_blocks(unoccupied)
+    hopping_unoccupied=get_hopping_matrix(unoccupied[2][2],#unoccupied[2]-1)
+    
+    if #occupied[2] < 2 then
+        ligands_occupied=0
+        hopping_occupied=0
+    else
+        ligands_occupied=ligands_from_blocks(occupied)
+        hopping_occupied=get_hopping_matrix(occupied[2][2],#occupied[2]-1)
+    end
+    hamiltonian = {{impurity,                               hopping_unoccupied, hopping_occupied},
+                   {ConjugateTranspose(hopping_unoccupied), ligands_unoccupied, 0               },
+                   {ConjugateTranspose(hopping_occupied),   0,                  ligands_occupied}}
+    
+    hamiltonian = Matrix.Flatten(hamiltonian)
+    writedata("h_slf",hamiltonian)
+    return hamiltonian
+end
+
+function get_hopping_matrix(block,size)
+    --Grabing the hopping to the ligands from the output of BlockBandDiagonalize
+    --and adding Zeros such that the dimension fits with the ligand submatrix
+    hopping={{block}}
+    for i=1,size-1 do
+        hopping[1][i+1]=Matrix.Zero(#block)
+    end
+    hopping = Matrix.Flatten(hopping)
+    return hopping
+end
+    
+function ligands_from_blocks(blocks)
+    --Grabing the ligands from the output of BlockBandDiagonalize  
+    ligands = {}
+    for i = 1,#blocks[2]-1 do
+        ligands[i]={}
+        for j = 1,#blocks[2]-1 do
+            if i==j then
+                ligands[i][j]=blocks[1][i+2]
+            elseif i==j-1 then
+                ligands[i][j]=blocks[2][j+1]
+            elseif i==j+1 then
+                ligands[i][j]=ConjugateTranspose(blocks[2][i+1])
+            else
+                ligands[i][j]=0
+            end
+        end
+    end
+    ligands=Matrix.Flatten(ligands)
+    return ligands
+end
+
+function calculate_XAS(filename,NF,XASHamiltonian,index,RestrictionsXAS,Emin,Emax)
+    print("Calculating Spectra")
+    psid = T3psiAll
+
+    --XASSpectra = CreateSpectra(XASHamiltonian, T3d5fz, psiList, {{"Emin",-800}, {"Emax",1000}, {"NE",9000}, {"Gamma",3},{"Restrictions", RestrictionsXAS}})
+
+
+    XASSpectra = CreateSpectra(XASHamiltonian, T3d5fz, psid, {{"Emin",-800}, {"Emax",1000}, {"NE",9000}, {"Gamma",3},{"Restrictions", RestrictionsXAS},{"NTri",8}})
+    print("done\n")
+
+    -- XASSpectra.Broaden(0.4, {{-3.7, 0.45}, {-2.2, 0.65}, { 0.0, 0.65}, { 1.0, 2.00}, { 6  , 2.00}, { 8  , 0.80}, {13.2, 0.80}, {14.0, 0.90}, {16.0, 0.90}, {17.0, 2.00}})
+
+    -- We can print the spectra to file
+    XASSpectra.Print({{"file","data/"..filename}})
+    XASSpectra.Print({{"file","data/current.dat"}})
+end
+
+function plot_XAS(filename)
+    gnuplotInput = [[
+    set autoscale
+    set xtic auto
+    set ytic auto
+
+    set style line  1 lt 1 lw 1 lc rgb "#FF0000"
+    set style line  2 lt 1 lw 1 lc rgb "#00FF00"
+    set style line  3 lt 1 lw 1 lc rgb "#0000FF"
+    set style line  4 lt 1 lw 1 lc rgb "#FFA500"
+    set style line  5 lt 1 lw 1 lc rgb "#000000"
+
+    set xlabel "E (eV)" font "Times,12"
+    set ylabel "Intensity (arb. units)" font "Times,12"
+    set terminal postscript portrait enhanced color  "Times" 12
+    set out 'current.ps'
+
+    energyshift=0
+    intensityscale=1
+
+    plot "current.dat" using ($1+energyshift):((-$3) * intensityscale) title 'z polarized' with lines ls 5
+
+    set xrange[-610:-545]
+    plot "current.dat" using ($1+energyshift):((-$3) * intensityscale) title 'z polarized' with lines ls 5
+
+    set xrange[770:825]
+    plot "current.dat" using ($1+energyshift):((-$3) * intensityscale) title 'z polarized' with lines ls 5
+    ]]
+
+    -- write the gnuplot script to a file
+    file = io.open("data/"..filename..".gnuplot", "w")
+    file:write(gnuplotInput)
+    file:close()
+
+    -- and finally call gnuplot to execute the script
+    os.execute("gnuplot data/"..filename..".gnuplot")
+    -- as I like pdf to view and eps to include in the manuel I transform the format
+    os.execute(" ps2pdf data/current.ps")
+    --plot "XASSpec.dat" using ($1+energyshift):((-$5) * intensityscale) title 'z polarized d0' with lines ls 1,\
+    --     "XASSpec.dat" using ($1+energyshift):((-$7) * intensityscale) title 'z polarized d1' with lines ls 2,\
+    --     "XASSpec.dat" using ($1+energyshift):((-$9) * intensityscale) title 'z polarized d2' with lines ls 3,\
+    --     "XASSpec.dat" using ($1+energyshift):((-$11) * intensityscale) title 'z polarized d3' with lines ls 4
+end

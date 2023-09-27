@@ -1,0 +1,35 @@
+print("Read input  ")
+fplo_out = FileReadDresdenFPLO(fplo_input_file) 
+print("ok\n")
+
+print("Create TB Hamiltonian  ")
+tb = TightBindingDefFromDresdenFPLO(fplo_out)
+print("ok\n")
+
+print("Define a cluster")
+rad = 10
+new_cluster = FindAllAtomsInsideSphere(tb.Atoms,tb.Cell,{0,0,0},rad)
+print("ok\n")
+
+print("Create Cluster Hamiltonian  ")
+h_cluster, cluster_tb, index_name = CreateClusterHamiltonian(tb, {"open", new_cluster},  {{"AddSpin",false}, {"ReturnTBIndicesDict",true}})
+
+rotated_cluster_tb, t = BlockBandDiagonalize(cluster_tb, {{"U",{0,0,0},{{"5f",{"f_{y^3-3x^2y}","f_{xyz}","f_{5z^2y-yr^2}","f_{5z^3-3zr^2}","f_{5z^2x-xr^2}","f_{x^2z-y^2z}","f_{x^3-3xy^2}"}}}}},{{"Ntri",10}})--,{{"Ntri",10}}
+
+h_dft, cluster_tb, index_name = CreateClusterHamiltonian(rotated_cluster_tb, {"open", rotated_cluster_tb.Atoms},  {{"AddSpin",false}, {"ReturnTBIndicesDict",true}})
+print("ok\n")
+
+
+h_dft = Chop(h_dft,1E-10)
+
+--############################## Generate split Ligand model ##################################################--
+print("Generate split Ligand model  ")
+h_dft = create_split_ligand_hamiltonian(h_dft,7,2,1,0)
+print("ok\n")
+
+
+print("Rotate to spherical harmonics")
+
+orbs={"U_5f","Ligand_Occupied_5f"}
+
+h_dft = Rotate(h_dft,ConjugateTranspose(YtoZMatrix(orbs)))

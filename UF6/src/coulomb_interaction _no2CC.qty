@@ -1,0 +1,40 @@
+--############################## Coulomb Operator ##############################################################--
+print("Creating Hamiltonian")
+
+F2ff = 7.97459
+F4ff = 5.11898
+F6ff = 3.7264
+F0ff = U5f5f + (4/195) * F2ff + (2/143) * F4ff + (100/5577) * F6ff
+
+OppF_U5f = NewOperator("U", 14, index["5f_Up"], index["5f_Dn"], {F0ff,F2ff,F4ff,F6ff})
+
+--#################################### Core Valence Interaction ################################################
+G1df = 1.53924
+G3df = 0.927659
+G5df = 0.648061
+F0df = U5f3d + (3/70) * G1df + (2/105) * G3df + (5/231) * G5df
+F2df = 1.97371
+F4df = 0.912915
+
+G0ff= 1.08976
+G2ff= 1.33779
+G4ff= 1.03788
+G6ff= 0.808886
+F0ff = U5f4f + (1/14) * G0ff + (2/105) * G2ff + (1/77) * G4ff + (50/3003) * G6ff
+F2ff= 4.09156
+F4ff= 1.732
+F6ff= 1.06722
+
+OppUdf = NewOperator("U", NF, index["5f_Up"], index["5f_Dn"], index["3d_Up"], index["3d_Dn"], {F0df,F2df,F4df}, {G1df,G3df,G5df})
+OppUff = NewOperator("U", NF, index["5f_Up"], index["5f_Dn"], index["4f_Up"], index["4f_Dn"], {F0ff,F2ff,F4ff,F6ff},{G0ff,G2ff,G4ff,G6ff})
+
+--#################################### Spin-Orbit-Coupling #####################################################
+zeta_3d = 2/5*(187.5864-134.819)*26
+zeta_4f = 2/7*0.405*26
+zeta_5f = 2/7*0.0303*26
+
+Opp3dldots= zeta_3d * NewOperator("ldots", NF, index["3d_Up"], index["3d_Dn"])
+Opp4fldots= zeta_4f * NewOperator("ldots", NF, index["4f_Up"], index["4f_Dn"])
+Opp5fldots= zeta_5f * NewOperator("ldots", NF, index["5f_Up"], index["5f_Dn"])
+
+OppF_U5f.NF=NF

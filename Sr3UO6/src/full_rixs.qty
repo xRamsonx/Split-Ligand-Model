@@ -1,0 +1,41 @@
+if skip > 0 then
+    skip=skip-1
+    print("Skiping RIXS z to z")
+else
+    print("Starting RIXS z to z")
+    rixs_spectra = CreateResonantSpectra(XASHamiltonian, FinHamiltonian, TXASz, T4f3dz, ground_state, {{"Emin1",Emin1}, {"Emax1",Emax1}, {"NE1",N1}, {"Gamma1",Gamma1}, {"Emin2",Emin2}, {"Emax2",Emax2}, {"NE2",N2}, {"Gamma2",Gamma2},{"Restrictions1",RestrictionsXAS},{"Restrictions2",RestrictionsXAS}})
+    rixs_spectra.Print({{"file","data/RIXS/"..filename.."_z_z.dat"}})
+    print("Time: ",os.time()-start_time)
+end
+
+if skip > 0 then
+    skip=skip-1
+    print("Skiping RIXS z to x")
+else
+    print("Starting RIXS z to x")
+    rixs_spectra = CreateResonantSpectra(XASHamiltonian, FinHamiltonian, TXASz, T4f3dx, ground_state, {{"Emin1",Emin1}, {"Emax1",Emax1}, {"NE1",N1}, {"Gamma1",Gamma1}, {"Emin2",Emin2}, {"Emax2",Emax2}, {"NE2",N2}, {"Gamma2",Gamma2},{"Restrictions1",RestrictionsXAS},{"Restrictions2",RestrictionsXAS}})
+    rixs_spectra.Print({{"file","data/RIXS/"..filename.."_z_x.dat"}})
+    print("Time: ",os.time()-start_time)
+end
+
+if skip > 0 then
+    skip=skip-1
+    print("Skiping RIXS zpx to zpx")
+else
+    print("Starting RIXS zpx to zpx")
+    rixs_spectra = CreateResonantSpectra(XASHamiltonian, FinHamiltonian, TXASzpx, T4f3dzpx, ground_state, {{"Emin1",Emin1}, {"Emax1",Emax1}, {"NE1",N1}, {"Gamma1",Gamma1}, {"Emin2",Emin2}, {"Emax2",Emax2}, {"NE2",N2}, {"Gamma2",Gamma2},{"Restrictions1",RestrictionsXAS},{"Restrictions2",RestrictionsXAS}})
+    rixs_spectra.Print({{"file","data/RIXS/"..filename.."_zpx_zpx.dat"}})
+    print("Time: ",os.time()-start_time)
+end
+
+if skip > 0 then
+    skip=skip-1
+    print("Skiping RIXS zpx to zpx")
+else
+    print("Starting RIXS zpix to zpix")
+    rixs_spectra = CreateResonantSpectra(XASHamiltonian, FinHamiltonian, TXASzpix, T4f3dzpix, ground_state, {{"Emin1",Emin1}, {"Emax1",Emax1}, {"NE1",N1}, {"Gamma1",Gamma1}, {"Emin2",Emin2}, {"Emax2",Emax2}, {"NE2",N2}, {"Gamma2",Gamma2},{"Restrictions1",RestrictionsXAS},{"Restrictions2",RestrictionsXAS}})
+    rixs_spectra.Print({{"file","data/RIXS/"..filename.."_zpix_zpix.dat"}})
+    print("Time: ",os.time()-start_time)
+    print("done")
+end
+

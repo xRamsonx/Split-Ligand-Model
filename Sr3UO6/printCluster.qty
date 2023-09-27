@@ -1,0 +1,15 @@
+fplo_input_file = "fplo.Sr3UO6"
+print("Read input  ")
+fplo_out = FileReadDresdenFPLO(fplo_input_file) 
+print("ok\n")
+
+print("Create TB Hamiltonian  ")
+tb = TightBindingDefFromDresdenFPLO(fplo_out)
+print("ok\n")
+
+print("Define a cluster")
+rad = 10
+new_cluster = FindAllAtomsInsideSphere(tb.Atoms,tb.Cell,{0,0,0},rad)
+print(new_cluster)
+print("ok\n")
+

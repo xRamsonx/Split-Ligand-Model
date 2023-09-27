@@ -1,0 +1,40 @@
+t=1/math.sqrt(2)
+
+Akm = {{1,-1,t},{1, 1,-t}}
+TXASx = NewOperator("CF", NF,
+index["5f_Up"],index["5f_Dn"],index["3d_Up"],index["3d_Dn"],
+ Akm)
+T4f3dx = NewOperator("CF", NF,
+index["3d_Up"],index["3d_Dn"],index["4f_Up"],index["4f_Dn"],
+Akm)
+
+Akm = {{1,-1,t*I},{1, 1,t*I}}
+TXASy = NewOperator("CF", NF,
+index["5f_Up"],index["5f_Dn"],index["3d_Up"],index["3d_Dn"],
+Akm)
+T4f3dy = NewOperator("CF", NF,
+index["3d_Up"],index["3d_Dn"],index["4f_Up"],index["4f_Dn"],
+Akm)
+
+Akm = {{1,0,1}}
+TXASz = NewOperator("CF", NF,
+index["5f_Up"],index["5f_Dn"],index["3d_Up"],index["3d_Dn"],
+Akm)
+T4f3dz = NewOperator("CF",
+NF,index["3d_Up"],index["3d_Dn"],index["4f_Up"],index["4f_Dn"],
+Akm)
+
+--And combinations
+TXASypz  =  sqrt(1/2)*(TXASy + TXASz)
+TXASzpx  =  sqrt(1/2)*(TXASz + TXASx)
+TXASxpy  =  sqrt(1/2)*(TXASx + TXASy)
+TXASypiz =  sqrt(1/2)*(TXASy + I * TXASz)
+TXASzpix =  sqrt(1/2)*(TXASz + I * TXASx)
+TXASxpiy =  sqrt(1/2)*(TXASx + I * TXASy)
+
+T4f3dypz  =  sqrt(1/2)*(T4f3dy + T4f3dz)
+T4f3dzpx  =  sqrt(1/2)*(T4f3dz + T4f3dx)
+T4f3dxpy  =  sqrt(1/2)*(T4f3dx + T4f3dy)
+T4f3dypiz =  sqrt(1/2)*(T4f3dy + I * T4f3dz)
+T4f3dzpix =  sqrt(1/2)*(T4f3dz + I * T4f3dx)
+T4f3dxpiy =  sqrt(1/2)*(T4f3dx + I * T4f3dy)

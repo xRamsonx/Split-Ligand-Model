@@ -1,0 +1,35 @@
+filename="size_RIXSM4_"..type
+print("Calculating M4")
+--M4 edge
+Emin1=800
+Emax1=820
+N1=5 --computationaly expensive
+Emin2=-100
+Emax2=100
+N2=2000 --computationaly cheap
+
+Gamma1=3.5
+Gamma2=0.37
+
+print("Starting RIXS z to z")
+rixs_spectra = CreateResonantSpectra(XASHamiltonian, FinHamiltonian, TXASz, T4f3dz, ground_state, {{"Emin1",Emin1}, {"Emax1",Emax1}, {"NE1",N1}, {"Gamma1",Gamma1}, {"Emin2",Emin2}, {"Emax2",Emax2}, {"NE2",N2}, {"Gamma2",Gamma2},{"Restrictions1",RestrictionsXAS},{"Restrictions2",RestrictionsXAS}})
+rixs_spectra.Print({{"file","data/RIXS/"..filename.."_z_z2.dat"}})
+print("Time: ",os.time()-start_time)
+
+filename="size_RIXSM5_"..type
+print("Calculating M5")
+--M5 edge
+Emin1=-570.4
+Emax1=-550.4
+N1=5 --computationaly expensive
+Emin2=-100
+Emax2=100
+N2=2000 --computationaly cheap
+
+Gamma1=3.5
+Gamma2=0.31
+
+print("Starting RIXS z to z")
+rixs_spectra = CreateResonantSpectra(XASHamiltonian, FinHamiltonian, TXASz, T4f3dz, ground_state, {{"Emin1",Emin1}, {"Emax1",Emax1}, {"NE1",N1}, {"Gamma1",Gamma1}, {"Emin2",Emin2}, {"Emax2",Emax2}, {"NE2",N2}, {"Gamma2",Gamma2},{"Restrictions1",RestrictionsXAS},{"Restrictions2",RestrictionsXAS}})
+rixs_spectra.Print({{"file","data/RIXS/"..filename.."_z_z2.dat"}})
+print("Time: ",os.time()-start_time)

@@ -1,0 +1,52 @@
+--################################# Onsite Energies ##############################################################
+Ea2u = -5.75548
+Et1u = -6.29625
+Et2u = -5.94464
+E1l_t1u = -11.1695
+E1l_t2u = -12.4818
+E2l = -12.1068
+
+akm = {{4, 0, (-3/4)*((2)*(Ea2u) + (-3)*(Et1u) + Et2u)} , 
+       {4,-4, (-3/4)*((sqrt(5/14))*((2)*(Ea2u) + (-3)*(Et1u) + Et2u))} , 
+       {4, 4, (-3/4)*((sqrt(5/14))*((2)*(Ea2u) + (-3)*(Et1u) + Et2u))} , 
+       {6, 0, (39/280)*((4)*(Ea2u) + (5)*(Et1u) + (-9)*(Et2u))} , 
+       {6,-4, (-39/40)*((1/(sqrt(14)))*((4)*(Ea2u) + (5)*(Et1u) + (-9)*(Et2u)))} , 
+       {6, 4, (-39/40)*((1/(sqrt(14)))*((4)*(Ea2u) + (5)*(Et1u) + (-9)*(Et2u)))} }
+OpE_U5f = NewOperator("CF", NF, index["5f_Up"], index["5f_Dn"], akm)
+
+Ea2u = -12
+Et1u = E1l_t1u
+Et2u = E1l_t2u
+akm = {{4, 0, (-3/4)*((2)*(Ea2u) + (-3)*(Et1u) + Et2u)} , 
+       {4,-4, (-3/4)*((sqrt(5/14))*((2)*(Ea2u) + (-3)*(Et1u) + Et2u))} , 
+       {4, 4, (-3/4)*((sqrt(5/14))*((2)*(Ea2u) + (-3)*(Et1u) + Et2u))} , 
+       {6, 0, (39/280)*((4)*(Ea2u) + (5)*(Et1u) + (-9)*(Et2u))} , 
+       {6,-4, (-39/40)*((1/(sqrt(14)))*((4)*(Ea2u) + (5)*(Et1u) + (-9)*(Et2u)))} , 
+       {6, 4, (-39/40)*((1/(sqrt(14)))*((4)*(Ea2u) + (5)*(Et1u) + (-9)*(Et2u)))} }
+OpE_1L = NewOperator("CF", NF, index["1Lf_Up"], index["1Lf_Dn"], akm)
+--[[
+Ea2u = -12
+Et1u = E2l
+Et2u = -12
+akm = {{4, 0, (-3/4)*((2)*(Ea2u) + (-3)*(Et1u) + Et2u)} , 
+       {4,-4, (-3/4)*((sqrt(5/14))*((2)*(Ea2u) + (-3)*(Et1u) + Et2u))} , 
+       {4, 4, (-3/4)*((sqrt(5/14))*((2)*(Ea2u) + (-3)*(Et1u) + Et2u))} , 
+       {6, 0, (39/280)*((4)*(Ea2u) + (5)*(Et1u) + (-9)*(Et2u))} , 
+       {6,-4, (-39/40)*((1/(sqrt(14)))*((4)*(Ea2u) + (5)*(Et1u) + (-9)*(Et2u)))} , 
+       {6, 4, (-39/40)*((1/(sqrt(14)))*((4)*(Ea2u) + (5)*(Et1u) + (-9)*(Et2u)))} }
+OpE_2L = NewOperator("CF", NF, index["2Lf_Up"], index["2Lf_Dn"], akm)
+--]]
+--################################# Coupling parameters ##########################################################
+Dt1u = 4.00425
+Dt2u = 2.41828
+D1l1 = 0.889534
+
+akm=PotentialExpandedOnClm("Oh", 3, {0,Dt1u,Dt2u})
+OpT_U5f_1L 	= NewOperator("CF", NF, index["5f_Up"],  index["5f_Dn"],  index["1Lf_Up"], index["1Lf_Dn"], akm) 
+		    + NewOperator("CF", NF, index["1Lf_Up"], index["1Lf_Dn"], index["5f_Up"],  index["5f_Dn"], akm)
+--[[
+akm=PotentialExpandedOnClm("Oh", 3, {0,Dt1u,0})
+OpT_1L_2L 	= NewOperator("CF", NF, index["1Lf_Up"], index["1Lf_Dn"], index["2Lf_Up"], index["2Lf_Dn"], akm) 
+		    + NewOperator("CF", NF, index["2Lf_Up"], index["2Lf_Dn"], index["1Lf_Up"], index["1Lf_Dn"], akm)
+--]]
+h_dft = OpE_U5f + OpE_1L + OpT_U5f_1L -- + OpT_1L_2L + OpE_2L
